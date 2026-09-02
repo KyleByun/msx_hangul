@@ -1,34 +1,41 @@
-**한국어** · [English](#msx2-johab-hangul-on-a-cartridge)
+**한국어** · [English](#msx2-hangul-on-a-cartridge)
 
-# MSX2 조합형 한글 출력 예제
+# MSX2 한글 출력 예제
 
-MSX2 카트리지 롬 두 개입니다. 두 바이트짜리 **조합형** 한글 코드에서 초성·중성·종성을
-다섯 비트씩 뽑아, 자모 폰트 셋을 **실행 중에 겹쳐서** 화면에 찍습니다.
-글자를 통째로 갖고 있지 않으므로, 자모 몇십 벌로 한글 11,172자를 전부 냅니다.
+MSX2 카트리지 롬 세 개입니다. 8비트 기계에서 한글을 찍는 두 가지 방식을 나란히 놓았습니다.
 
-| | `hangul.rom` | `hangul8.rom` |
-|---|---|---|
-| 글자 크기 | **16x16** | **8x8** (글자는 7x8) |
-| 폰트 | 벌 8/4/4, **11,520바이트** | 벌 1/1/1, **560바이트** |
-| 한 화면 | 16칸 x 13줄 | **32칸 x 26줄** |
-| 벌 고르는 표 | 필요 (138바이트) | **없음** |
-| 롬에 쓴 것 | 12,676바이트 | **1,628바이트** |
-| 진입 | `src/hangul.asm` | `src/hangul8.asm` |
+**조합형** 두 개는 두 바이트 코드에서 초성·중성·종성을 다섯 비트씩 뽑아 자모 폰트를
+**실행 중에 겹칩니다.** 글자를 통째로 갖지 않으므로 자모 몇십 벌로 11,172자를 전부 냅니다.
+**완성형** 하나는 반대로, 겹치지 않고 **쓰는 글자만** 통째로 갖습니다.
+
+| | `hangul.rom` | `hangul12.rom` | `hangul8.rom` |
+|---|---|---|---|
+| 글자 크기 | **16x16** | **12x12** | **8x8** (글자는 7x8) |
+| 방식 | 조합형 | **완성형 부분집합** | 조합형 |
+| 폰트 | 벌 8/4/4, 11,520바이트 | 쓰는 글자 x 24바이트 | 벌 1/1/1, 560바이트 |
+| 담는 글자 | 11,172자 전부 | **쓰는 글자만** | 11,172자 전부 |
+| 한 화면 | 16칸 x 13줄 | 21칸 x 17줄 | **32칸 x 26줄** |
+| 롬에 쓴 것 | 12,676바이트 | **2,549바이트** (72자 기준) | 1,628바이트 |
+| 진입 | `src/hangul.asm` | `src/hangul12.asm` | `src/hangul8.asm` |
 
 <p align="center">
-  <img src="doc/img/hangul.png" width="47%" alt="16x16 조합형 한글">
-  <img src="doc/img/hangul8.png" width="47%" alt="8x8 조합형 한글">
+  <img src="doc/img/hangul.png" width="31%" alt="16x16 조합형 한글">
+  <img src="doc/img/hangul12.png" width="31%" alt="12x12 완성형 한글">
+  <img src="doc/img/hangul8.png" width="31%" alt="8x8 조합형 한글">
 </p>
+
+<p align="center"><img src="doc/img/sizes.png" width="88%" alt="세 크기 견주기"></p>
 
 화면 모드는 SCREEN 5 (GRAPHIC 4), 256x212, 16색입니다. sjasmplus 로 빌드하고 openMSX 로 확인합니다.
 
 ## 빌드하고 확인하기
 
 ```bash
-./build.sh          # 둘 다 만든다 (16 또는 8 을 붙이면 한쪽만)
+./build.sh          # 셋 다 만든다 (16, 12, 8 중 하나를 붙이면 한쪽만)
 ./verify.sh         # 창 없이 부팅해 화면을 찍고, 기대 화면과 픽셀 단위로 비교
 ./run.sh            # 16x16 판을 창으로 실행
-./run.sh 8          # 8x8 판을 창으로 실행
+./run.sh 12         # 12x12 판
+./run.sh 8          # 8x8 판
 ```
 
 윈도우에서는 `build.ps1` / `verify.ps1` 을 쓰세요. 도구 경로는 `tools.sh` (리눅스),
@@ -37,13 +44,13 @@ MSX2 카트리지 롬 두 개입니다. 두 바이트짜리 **조합형** 한글
 `verify.sh` 는 "sjasmplus 가 성공했다" 로 끝내지 않습니다.
 `tools/mkdata.py` 가 화면 정의 하나에서 **롬 자료**와 **기대 화면 그림**을 함께 굽고,
 에뮬레이터가 찍은 화면을 팔레트 16색으로 되돌려 색 번호끼리 비교합니다.
-두 롬 모두 **54,272픽셀이 전부 일치**합니다.
+세 롬 모두 **54,272픽셀이 전부 일치**합니다.
 
 Z80 쪽과 파이썬 쪽은 조합형 표를 따로 한 벌씩 갖고 있고, 서로를 두 가지 방식으로 검산합니다.
 
 | 무엇을 | 어떻게 | 얼마나 |
 |---|---|---|
-| 표 | `tools/proof.py` 가 `src/hangul*.asm` 의 `db` 줄을 읽어 파이썬 표와 한 칸씩 비교 | 파일 2개, 표 11개 298칸 **전부** |
+| 표 | `tools/proof.py` 가 `src/hangul*.asm` 의 `db` 줄을 읽어 파이썬 표와 한 칸씩 비교 | 파일 3개, 표 11개 298칸 **전부** |
 | 합성 + 출력 | `tools/compare.py` 가 에뮬레이터 화면과 기대 화면을 픽셀 단위로 비교 | 화면에 나온 글자 |
 
 표 검사가 따로 있는 이유는, 화면에 나오는 글자가 초성 19개·종성 27개를 다 덮지 못하기 때문입니다.
@@ -61,9 +68,9 @@ Z80 쪽과 파이썬 쪽은 조합형 표를 따로 한 벌씩 갖고 있고, �
 
 `한` 은 초성 ㅎ(20), 중성 ㅏ(3), 종성 ㄴ(5) 이므로 `0xD065` 입니다.
 자모 자리에는 **채움** 값이 따로 있어서, 낱자 하나만 보여 줄 수도 있습니다.
-두 화면 아래쪽의 `ㅎ + ㅏ + ㄴ = 한` 이 그것으로, 왼쪽 셋은 나머지 자리를 채움으로 메운 진짜 조합형 코드입니다.
+조합형 두 화면 아래쪽의 `ㅎ + ㅏ + ㄴ = 한` 이 그것으로, 왼쪽 셋은 나머지 자리를 채움으로 메운 진짜 조합형 코드입니다.
 
-**두 롬이 이 대목까지는 완전히 같습니다.** 코드를 자르는 방법도, 코드값을 폰트 번호로 바꾸는
+**조합형 두 롬은 이 대목까지 완전히 같습니다.** 코드를 자르는 방법도, 코드값을 폰트 번호로 바꾸는
 표(`TbCho`/`TbJung`/`TbJong`)도 한 칸도 다르지 않습니다. 갈리는 것은 다음 한 가지뿐입니다.
 
 ## 갈리는 곳은 '벌' 하나뿐
@@ -89,6 +96,38 @@ Z80 쪽과 파이썬 쪽은 조합형 표를 따로 한 벌씩 갖고 있고, �
 > 참고한 `hangle.c` 도 그랬습니다 — 예제 코드값까지 틀려서, 주석에 "한"이라고 적힌 `0xB463` 을
 > 풀면 ㅇ+ㅏ+ㄲ, 즉 `앆` 입니다. 숫자는 전부 `PUTHAN.PAS` 쪽을 따랐고, 아래 `proof.py` 로 검산했습니다.
 
+## 8x8 은 왜 더 좋게 못 만드나
+
+8x8 이 읽기 힘들어서 다른 폰트를 찾아봤습니다. 결론은 **개미체가 이미 제일 낫다** 입니다.
+근거는 눈이 아니라 숫자입니다 — 한글 11,172자를 전부 만들어 보고 **비트맵이 똑같아지는 글자**를 셌습니다.
+비트맵이 같으면 사람도 구별할 수 없습니다.
+
+```bash
+python3 tools/fontscan.py --bdf <16x16 완성형 BDF>
+```
+
+| 폰트와 방식 | 서로 구별 안 되는 글자 |
+|---|---:|
+| 개미체 8x8 (손으로 8x8 에 맞춰 그린 것) | **0자 (0.0%)** |
+| 16x16 조합형 폰트의 자모를 12x12 로 줄여 겹치기 | 2,301자 (20.6%) |
+| 같은 것을 14x14 로 | 2,052자 (18.4%) |
+| DOSGothic 완성형 16x16 -> 12x12 | 2,635자 (23.6%) |
+| **DOSSaemmul 완성형 16x16 -> 12x12** | **94자 (0.8%)** |
+| DOSSaemmul 완성형 16x16 -> 14x14 | 0자 (0.0%) |
+
+읽어 낼 점이 셋입니다.
+
+1. **8x8 로 줄이는 것은 전부 실패합니다.** 16x16 을 8x8 로 줄이면 획이 붙어 뭉개집니다.
+   개미체가 8x8 에서 성립하는 이유는 애초에 그 크기에 맞춰 손으로 그렸기 때문입니다.
+   더 나은 8x8 한글 비트맵 글꼴은 찾지 못했습니다.
+2. **조합형을 줄이는 것도 실패합니다.** 자모를 12x12 로 줄여 겹치면 ㅗ, ㅛ, ㅡ 가 같은 그림이 되어
+   `녹`, `뇩`, `늑` 을 구별할 수 없습니다. 겹칠 자리가 모자란 것이라 임계값을 바꿔도 해결되지 않습니다.
+3. **완성형을 줄이는 것은 폰트를 잘 고르면 됩니다.** 같은 조건에서 고딕체는 23.6%, 샘물체는 0.8% 입니다.
+   그래서 12x12 판은 조합형을 포기하고 **샘물체 완성형 부분집합**으로 갔습니다.
+
+부분집합에서는 0.8% 도 문제가 되지 않습니다. 실제로 쓰는 글자들끼리만 부딪히지 않으면 되고,
+그건 빌드할 때 확인해서 부딪히면 멈춥니다.
+
 ## 폰트 파일
 
 ### 16x16 (11,520바이트)
@@ -107,7 +146,7 @@ Z80 쪽과 파이썬 쪽은 조합형 표를 따로 한 벌씩 갖고 있고, �
 종성 1벌 x 28자 x 8바이트 = 224         0x150~
 ```
 
-두 경우 다 벌 안에서 자모가 **폰트 번호** 순서로 늘어서는데, 이 번호는 조합형 코드값과 다릅니다.
+두 조합형 판 다 벌 안에서 자모가 **폰트 번호** 순서로 늘어서는데, 이 번호는 조합형 코드값과 다릅니다.
 코드값에 빈 자리가 있기 때문입니다 (중성은 8, 9, 16, 17… 자리가 비고, 종성은 18 자리가 빕니다).
 `TbCho` / `TbJung` / `TbJong` 이 그 변환표이고, 두 롬이 이것을 똑같이 씁니다.
 
@@ -115,6 +154,26 @@ Z80 쪽과 파이썬 쪽은 조합형 표를 따로 한 벌씩 갖고 있고, �
 8x8 을 왼쪽 위로 몰아 그린 파일입니다. `tools/johab.py` 의 `build_font8()` 이
 **16x16 칸의 행 1~8, 왼쪽 바이트만** 뽑아내고, 개미체에 없는 채움 자리에 빈 8바이트를 끼워 넣어
 560바이트 폰트를 만듭니다. (그릇은 2벌이지만 두 벌이 똑같이 그려져 있습니다 — `proof.py` 가 확인합니다.)
+
+### 12x12 (쓰는 글자 x 24바이트)
+
+여기에는 벌도 자모도 없습니다. 글자 하나가 24바이트(한 줄 2바이트 x 12줄)이고, 글줄에 적힌 값이
+곧 글리프 번호입니다. 번호에 24를 곱하면 바로 주소라, `hangul12.asm` 에는 표가 하나도 없습니다.
+한 줄이 12비트뿐이라 아래 4비트는 늘 비어 있고, 롬의 blit 루틴이 그걸 전제로 남은 네 픽셀을
+위쪽 니블에서 꺼냅니다.
+
+원본 BDF 는 4MB 라 저장소에 넣지 않았습니다. 대신 화면에 쓰는 72자만 뽑아 두었습니다.
+
+```
+assets/saemmul12.txt   담긴 글자들. 한 줄, 폰트에 담긴 차례 그대로
+assets/saemmul12.fnt   72자 x 24바이트 = 1,728바이트
+```
+
+글을 바꾸면 원본 BDF 를 가지고 다시 뽑아야 합니다.
+
+```bash
+python3 tools/mkfont12.py --bdf ~/다운로드/hangul/fonts_220507/bdf/DOSSaemmul-16.bdf
+```
 
 ### 넣어 둔 것
 
@@ -124,6 +183,7 @@ Z80 쪽과 파이썬 쪽은 조합형 표를 따로 한 벌씩 갖고 있고, �
 | `gaemi8x8.fnt` | 8x8 | 개미체 1.0, 2012, 홍기정. **AGPL v3** |
 | `hangul16.fnt` | 16x16 **(16x16 판 기본)** | SDLHan 0.5 의 `h_soft.han`. 패키지는 GPL v2, 폰트 원저작자 불명 |
 | `gothic16.fnt` | 16x16 | `hangul11` 의 `HANG.FNT` (1990). 라이선스 불명 |
+| `saemmul12.fnt` `.txt` | 12x12 **(12x12 판)** | 도스 샘물체 (2016, Damheo Lee) 를 12x12 로 줄여 72자만 뽑은 것 |
 
 바꾸려면 `HANGUL_FONT=assets/gothic16.fnt ./build.sh 16`,
 `GAEMI_FONT=assets/gaemi8x8.fnt ./build.sh 8` 처럼 부르면 됩니다.
@@ -137,15 +197,15 @@ Z80 쪽과 파이썬 쪽은 조합형 표를 따로 한 벌씩 갖고 있고, �
 
 ## 롬 안의 배치
 
-| | `hangul.rom` | `hangul8.rom` |
-|---|---:|---:|
-| 카트리지 헤더 | 16 | 16 |
-| 코드 | 633 | 540 |
-| 코드값 표 (`Tb*`) | 96 | 96 |
-| 벌 표 + 벌별 주소 | 138 | **0** |
-| 화면 자료 + 낱개 그림 | 273 | 416 |
-| 폰트 | 11,520 | 560 |
-| **합계 (16,384 중)** | **12,676** | **1,628** |
+| | `hangul.rom` | `hangul12.rom` | `hangul8.rom` |
+|---|---:|---:|---:|
+| 카트리지 헤더 | 16 | 16 | 16 |
+| 코드 | 633 | **417** | 540 |
+| 코드값 표 (`Tb*`) | 96 | **0** | 96 |
+| 벌 표 + 벌별 주소 | 138 | **0** | 0 |
+| 화면 자료 + 낱개 그림 | 273 | 316 | 416 |
+| 폰트 | 11,520 | 1,800 | 560 |
+| **합계 (16,384 중)** | **12,676** | **2,549** | **1,628** |
 
 한 글자를 찍는 데 드는 것은 표를 서너 번 보고, 자모를 겹치고, 1bpp 를 4bpp 로 펼쳐
 VRAM 에 넣는 정도입니다.
@@ -153,14 +213,18 @@ VRAM 에 넣는 정도입니다.
 ## 파일
 
 ```
-src/hangul.asm      16x16 판 본체
-src/hangul8.asm     8x8 판 본체. 위와 나란히 놓고 보면 벌 대목만 빠져 있다
+src/hangul.asm      16x16 조합형 본체
+src/hangul8.asm     8x8 조합형 본체. 위와 나란히 놓고 보면 벌 대목만 빠져 있다
+src/hangul12.asm    12x12 완성형 본체. 조합을 안 해서 표가 하나도 없다
 src/hantext*.asm    화면 자료 (mkdata.py 가 만든다. 손대지 말 것)
 tools/johab.py      조합형 표, 파이썬 합성 루틴, 개미체 뽑아내기
+tools/wanseong.py   완성형 부분집합 만들기 (BDF 읽기, 12x12 로 줄이기)
 tools/mkdata.py     화면 정의 -> 롬 자료 + 기대 화면 그림
+tools/mkfont12.py   원본 BDF -> 12x12 부분집합 (글을 바꿨을 때만 돌린다)
 tools/compare.py    에뮬레이터 화면 vs 기대 화면
 tools/proof.py      표와 폰트가 맞는지 스스로 확인한다 (아래)
-assets/*.fnt        조합형 폰트
+tools/fontscan.py   폰트와 크기를 고른 근거. 구별 안 되는 글자를 센다
+assets/*.fnt        폰트
 ```
 
 화면에 나올 글은 `tools/mkdata.py` 의 `SCREENS` 를 고치면 됩니다. 유니코드 한글을 그대로 쓰면
@@ -174,15 +238,16 @@ python3 tools/proof.py
 ```
 
 ```
-어셈블리 표    : 통과 (파일 2개, 표 11개, 298칸)
+어셈블리 표    : 통과 (파일 3개, 표 11개, 298칸)
 왕복 검사      : 통과
 gaemi7x8.fnt   : 1x1x1벌 맞고, 뽑아낸 8x8 폰트 560바이트
 gaemi8x8.fnt   : 1x1x1벌 맞고, 뽑아낸 8x8 폰트 560바이트
+12x12 부분집합 : 통과 (글자 72자, 1728바이트, 서로 다 구별됨)
 gothic16.fnt   : 11172자 중 통째 OR 과 PUTHAN 방식이 다른 글자 0개
 hangul16.fnt   : 11172자 중 통째 OR 과 PUTHAN 방식이 다른 글자 0개
 ```
 
-네 가지를 확인합니다.
+다섯 가지를 확인합니다.
 
 1. **자모 셋을 통째로 OR 해도 되는가.** `PUTHAN.PAS` 는 받침이 있을 때 0~10행, 8~10행, 11~15행으로
    나눠 덮어쓰는데, 한글 11,172자를 두 방식으로 합성해 비교해 보면 결과가 **한 바이트도 다르지 않습니다**.
@@ -193,6 +258,8 @@ hangul16.fnt   : 11172자 중 통째 OR 과 PUTHAN 방식이 다른 글자 0개
    한 칸씩 비교합니다. 화면에 안 나오는 자모까지 전부 덮습니다. 8x8 판에 벌 표가 남아 있으면 그것도 잡습니다.
 4. **개미체를 그릇에서 제대로 뽑아냈는가.** 2벌짜리 무리의 두 벌이 정말 같은지(1x1x1벌인지),
    글자가 16x16 칸의 행 1~8 · 열 0~7 안에만 있는지 확인합니다.
+5. **12x12 부분집합이 성립하는가.** 담긴 글자들끼리 서로 구별되는지, 한 줄의 아래 4비트가
+   비어 있는지 봅니다. 부딪히는 글자가 생기면 빌드가 멈춥니다.
 
 ## Z80 쪽에서 조심한 것
 
@@ -208,6 +275,9 @@ hangul16.fnt   : 11172자 중 통째 OR 과 PUTHAN 방식이 다른 글자 0개
 * **한 벌의 자모 수가 20, 22, 28.** 2의 거듭제곱이 아니라 곱셈이 어중간합니다. 16x16 판은
   벌마다 시작 주소를 표로 적어 두고 자모 번호에 32만 곱해 더합니다. 8x8 판은 벌이 없어서
   무리 시작 주소에 번호 x 8 만 더하면 끝입니다.
+* **12x12 는 한 줄이 6바이트.** 12픽셀은 8+4 라 `ExpandByte` 로 네 바이트를 얻고,
+  남은 네 픽셀은 둘째 바이트의 **위쪽** 니블에서 꺼내 `ExpandByte.nibble` 로 두 바이트를 더 만듭니다.
+  폰트를 굽는 쪽에서 아래 4비트를 0으로 밀어 두고, `proof.py` 가 그걸 확인합니다.
 
 ## 필요한 것
 
@@ -221,38 +291,45 @@ hangul16.fnt   : 11172자 중 통째 OR 과 PUTHAN 방식이 다른 글자 0개
 
 ---
 
-**English** · [한국어](#msx2-조합형-한글-출력-예제)
+**English** · [한국어](#msx2-한글-출력-예제)
 
-# MSX2 Johab Hangul on a Cartridge
+# MSX2 Hangul on a Cartridge
 
-Two MSX2 cartridge ROMs. They take a two-byte **johab** (조합형) Hangul code, pull the initial,
-medial and final jamo out of it five bits at a time, and **compose the glyph at runtime** by
-OR-ing three jamo bitmaps together. No syllable is stored whole, so a few dozen jamo shapes
-render all 11,172 Hangul syllables.
+Three MSX2 cartridge ROMs, showing the two ways to put Hangul on an 8-bit machine side by side.
 
-| | `hangul.rom` | `hangul8.rom` |
-|---|---|---|
-| Glyph size | **16x16** | **8x8** (ink is 7x8) |
-| Font | 8/4/4 sets, **11,520 bytes** | 1/1/1 sets, **560 bytes** |
-| Per screen | 16 x 13 cells | **32 x 26 cells** |
-| Set-selection tables | required (138 bytes) | **none** |
-| ROM used | 12,676 bytes | **1,628 bytes** |
-| Entry point | `src/hangul.asm` | `src/hangul8.asm` |
+The two **johab** (조합형) ROMs take a two-byte code, pull the initial, medial and final jamo out
+of it five bits at a time, and **compose the glyph at runtime** by OR-ing three jamo bitmaps.
+No syllable is stored whole, so a few dozen jamo shapes render all 11,172 syllables.
+The **precomposed** ROM does the opposite: no composition, but it stores **only the syllables you use**.
+
+| | `hangul.rom` | `hangul12.rom` | `hangul8.rom` |
+|---|---|---|---|
+| Glyph size | **16x16** | **12x12** | **8x8** (ink is 7x8) |
+| Method | johab | **precomposed subset** | johab |
+| Font | 8/4/4 sets, 11,520 B | used syllables x 24 B | 1/1/1 sets, 560 B |
+| Syllables covered | all 11,172 | **only those used** | all 11,172 |
+| Per screen | 16 x 13 cells | 21 x 17 cells | **32 x 26 cells** |
+| ROM used | 12,676 bytes | **2,549 bytes** (72 syllables) | 1,628 bytes |
+| Entry point | `src/hangul.asm` | `src/hangul12.asm` | `src/hangul8.asm` |
 
 <p align="center">
-  <img src="doc/img/hangul.png" width="47%" alt="16x16 johab Hangul">
-  <img src="doc/img/hangul8.png" width="47%" alt="8x8 johab Hangul">
+  <img src="doc/img/hangul.png" width="31%" alt="16x16 johab Hangul">
+  <img src="doc/img/hangul12.png" width="31%" alt="12x12 precomposed Hangul">
+  <img src="doc/img/hangul8.png" width="31%" alt="8x8 johab Hangul">
 </p>
+
+<p align="center"><img src="doc/img/sizes.png" width="88%" alt="the three sizes compared"></p>
 
 Video mode is SCREEN 5 (GRAPHIC 4), 256x212, 16 colours. Built with sjasmplus, checked in openMSX.
 
 ## Build and verify
 
 ```bash
-./build.sh          # both ROMs (append 16 or 8 for just one)
+./build.sh          # all three ROMs (append 16, 12 or 8 for just one)
 ./verify.sh         # boot headless, screenshot, compare against the expected image
 ./run.sh            # run the 16x16 ROM in a window
-./run.sh 8          # run the 8x8 ROM in a window
+./run.sh 12         # the 12x12 ROM
+./run.sh 8          # the 8x8 ROM
 ```
 
 On Windows use `build.ps1` / `verify.ps1`. Tool paths live in exactly one place:
@@ -261,14 +338,14 @@ On Windows use `build.ps1` / `verify.ps1`. Tool paths live in exactly one place:
 `verify.sh` does not stop at "sjasmplus exited 0". `tools/mkdata.py` bakes both the **ROM data**
 and the **expected screen image** from a single screen definition; the emulator's screenshot is then
 quantised back to the 16-colour palette and compared index by index.
-Both ROMs currently match on **all 54,272 pixels**.
+All three ROMs currently match on **all 54,272 pixels**.
 
 The Z80 side and the Python side each hold their own copy of the johab tables, and they check each
 other two different ways:
 
 | What | How | Coverage |
 |---|---|---|
-| Tables | `tools/proof.py` parses the `db` lines out of `src/hangul*.asm` and diffs them against the Python lists | 2 files, 11 tables, **all 298 entries** |
+| Tables | `tools/proof.py` parses the `db` lines out of `src/hangul*.asm` and diffs them against the Python lists | 3 files, 11 tables, **all 298 entries** |
 | Composition + blit | `tools/compare.py` diffs the emulator screenshot against the expected image | the glyphs actually on screen |
 
 The table check exists because the glyphs on screen do not cover all 19 initials and 27 finals.
@@ -286,10 +363,10 @@ bit   15   14 13 12 11 10    9  8  7  6  5    4  3  2  1  0
 
 `한` is initial ㅎ (20), medial ㅏ (3), final ㄴ (5), so `0xD065`.
 Each field also has a dedicated **filler** value, which is how a lone jamo is written.
-The `ㅎ + ㅏ + ㄴ = 한` panel at the bottom of both screens uses exactly that: the three
+The `ㅎ + ㅏ + ㄴ = 한` panel at the bottom of both johab screens uses exactly that: the three
 left-hand cells are real johab codes with the unused fields set to filler.
 
-**Both ROMs are identical up to this point** — the same bit-slicing, and the same
+**The two johab ROMs are identical up to this point** — the same bit-slicing, and the same
 code-value-to-glyph-index tables (`TbCho`/`TbJung`/`TbJong`), entry for entry.
 Exactly one thing differs.
 
@@ -318,6 +395,40 @@ On that screen, the same `가고구과궈각곡곽` row shows the same ㄱ eight
 > actually decodes to ㅇ+ㅏ+ㄲ, i.e. `앆`. Every number here follows `PUTHAN.PAS` instead, and is
 > cross-checked by `proof.py` below.
 
+## Why 8x8 cannot be made better
+
+The 8x8 ROM is hard to read, so I went looking for a better font. The conclusion is that
+**GaemiChe is already the best there is** — and the evidence is a number, not an impression.
+Every one of the 11,172 Hangul syllables is rendered and the ones whose **bitmaps come out
+identical** are counted. If two syllables produce the same bitmap, no reader can tell them apart.
+
+```bash
+python3 tools/fontscan.py --bdf <a 16x16 precomposed BDF>
+```
+
+| Font and method | Indistinguishable syllables |
+|---|---:|
+| GaemiChe 8x8 (hand-drawn at 8x8) | **0 (0.0%)** |
+| 16x16 johab jamo shrunk to 12x12, then composed | 2,301 (20.6%) |
+| the same, to 14x14 | 2,052 (18.4%) |
+| DOSGothic precomposed 16x16 -> 12x12 | 2,635 (23.6%) |
+| **DOSSaemmul precomposed 16x16 -> 12x12** | **94 (0.8%)** |
+| DOSSaemmul precomposed 16x16 -> 14x14 | 0 (0.0%) |
+
+Three things follow.
+
+1. **Downscaling to 8x8 always fails.** Strokes merge into blobs. GaemiChe works at 8x8 because
+   it was drawn at that size to begin with. No better 8x8 Hangul bitmap font turned up.
+2. **Downscaling johab fails too.** Shrink the jamo to 12x12 and compose, and ㅗ, ㅛ and ㅡ collapse
+   into the same shape, so `녹`, `뇩` and `늑` become one glyph. There simply isn't room to overlay
+   three jamo in 12x12; no threshold fixes that.
+3. **Downscaling precomposed glyphs works if you pick the right font.** Under identical settings
+   DOSGothic loses 23.6% and DOSSaemmul loses 0.8%. So the 12x12 ROM drops johab entirely and uses
+   a **DOSSaemmul precomposed subset**.
+
+For a subset even 0.8% is a non-issue: only the syllables actually used have to stay distinct from
+each other, and the build checks exactly that and stops if any two collide.
+
 ## Font file layout
 
 ### 16x16 (11,520 bytes)
@@ -336,7 +447,7 @@ medials   1 set x 22 jamo x 8 bytes = 176          0x0A0~
 finals    1 set x 28 jamo x 8 bytes = 224          0x150~
 ```
 
-In both cases the jamo inside a set are ordered by **glyph index**, which is not the same as the
+In both johab ROMs the jamo inside a set are ordered by **glyph index**, which is not the same as the
 johab code value — the code space has gaps (medials skip 8, 9, 16, 17…; finals skip 18).
 `TbCho` / `TbJung` / `TbJong` are that mapping, and both ROMs use it identically.
 
@@ -346,6 +457,27 @@ format of 3,616 bytes — with the 8x8 art crammed into the top-left. `build_fon
 8 bytes where GaemiChe has no filler glyph, producing the 560-byte font. (The container holds two
 sets, but both are drawn identically — `proof.py` asserts this.)
 
+### 12x12 (used syllables x 24 bytes)
+
+No sets and no jamo here. One syllable is 24 bytes (2 bytes per row x 12 rows) and the value in a
+text line *is* the glyph index — multiply by 24 and that is the address, which is why
+`hangul12.asm` contains no tables at all. A row is only 12 bits wide, so the low 4 bits are always
+clear, and the ROM's blit relies on that: it takes the remaining four pixels from the *high* nibble
+of the second byte.
+
+The source BDF is 4 MB, so it is not in the repository. Only the 72 syllables this screen uses are:
+
+```
+assets/saemmul12.txt   the syllables, one line, in font order
+assets/saemmul12.fnt   72 x 24 bytes = 1,728 bytes
+```
+
+Change the text and you have to re-extract from the original BDF:
+
+```bash
+python3 tools/mkfont12.py --bdf ~/Downloads/hangul/fonts_220507/bdf/DOSSaemmul-16.bdf
+```
+
 ### What's bundled
 
 | File | Size | Origin and license |
@@ -354,6 +486,7 @@ sets, but both are drawn identically — `proof.py` asserts this.)
 | `gaemi8x8.fnt` | 8x8 | GaemiChe 1.0, 2012, by Hong Gi-jeong. **AGPL v3** |
 | `hangul16.fnt` | 16x16 **(16x16 default)** | `h_soft.han` from SDLHan 0.5. Package is GPL v2; the font's own author is unknown |
 | `gothic16.fnt` | 16x16 | `HANG.FNT` from `hangul11` (1990). License unknown |
+| `saemmul12.fnt` `.txt` | 12x12 **(12x12 ROM)** | DOSSaemmul (2016, Damheo Lee), shrunk to 12x12, 72 syllables only |
 
 To swap: `HANGUL_FONT=assets/gothic16.fnt ./build.sh 16`,
 `GAEMI_FONT=assets/gaemi8x8.fnt ./build.sh 8`.
@@ -367,15 +500,15 @@ gap inside the 8-pixel advance — that is why it is the default.
 
 ## ROM budget
 
-| | `hangul.rom` | `hangul8.rom` |
-|---|---:|---:|
-| Cartridge header | 16 | 16 |
-| Code | 633 | 540 |
-| Code-value tables (`Tb*`) | 96 | 96 |
-| Set tables + per-set addresses | 138 | **0** |
-| Screen data + symbol glyphs | 273 | 416 |
-| Font | 11,520 | 560 |
-| **Total (of 16,384)** | **12,676** | **1,628** |
+| | `hangul.rom` | `hangul12.rom` | `hangul8.rom` |
+|---|---:|---:|---:|
+| Cartridge header | 16 | 16 | 16 |
+| Code | 633 | **417** | 540 |
+| Code-value tables (`Tb*`) | 96 | **0** | 96 |
+| Set tables + per-set addresses | 138 | **0** | 0 |
+| Screen data + symbol glyphs | 273 | 316 | 416 |
+| Font | 11,520 | 1,800 | 560 |
+| **Total (of 16,384)** | **12,676** | **2,549** | **1,628** |
 
 Drawing one syllable costs three or four table lookups, an OR of two or three jamo bitmaps, and a
 1bpp-to-4bpp expansion into VRAM.
@@ -383,14 +516,18 @@ Drawing one syllable costs three or four table lookups, an OR of two or three ja
 ## Files
 
 ```
-src/hangul.asm      the 16x16 ROM
-src/hangul8.asm     the 8x8 ROM. Diff it against the above: only the set-selection part is missing
+src/hangul.asm      the 16x16 johab ROM
+src/hangul8.asm     the 8x8 johab ROM. Diff against the above: only set selection is missing
+src/hangul12.asm    the 12x12 precomposed ROM. No composition, so no tables at all
 src/hantext*.asm    screen data (generated by mkdata.py — do not edit)
 tools/johab.py      johab tables, the Python composer, GaemiChe extraction
+tools/wanseong.py   precomposed subsets (BDF reading, shrinking to 12x12)
 tools/mkdata.py     screen definition -> ROM data + expected screen image
+tools/mkfont12.py   original BDF -> 12x12 subset (only needed when the text changes)
 tools/compare.py    emulator screenshot vs expected image
 tools/proof.py      self-checks on the tables and the fonts (below)
-assets/*.fnt        johab fonts
+tools/fontscan.py   the evidence behind the font and size choice: counts indistinguishable syllables
+assets/*.fnt        fonts
 ```
 
 To change what appears on screen, edit `SCREENS` in `tools/mkdata.py`. Write plain Unicode Hangul
@@ -404,15 +541,16 @@ python3 tools/proof.py
 ```
 
 ```
-어셈블리 표    : 통과 (파일 2개, 표 11개, 298칸)
+어셈블리 표    : 통과 (파일 3개, 표 11개, 298칸)
 왕복 검사      : 통과
 gaemi7x8.fnt   : 1x1x1벌 맞고, 뽑아낸 8x8 폰트 560바이트
 gaemi8x8.fnt   : 1x1x1벌 맞고, 뽑아낸 8x8 폰트 560바이트
+12x12 부분집합 : 통과 (글자 72자, 1728바이트, 서로 다 구별됨)
 gothic16.fnt   : 11172자 중 통째 OR 과 PUTHAN 방식이 다른 글자 0개
 hangul16.fnt   : 11172자 중 통째 OR 과 PUTHAN 방식이 다른 글자 0개
 ```
 
-Four checks:
+Five checks:
 
 1. **Is a plain OR of the three jamo enough?** `PUTHAN.PAS` splits the composition into rows
    0–10, 8–10 and 11–15 when there is a final. Composing all 11,172 syllables both ways gives
@@ -425,6 +563,8 @@ Four checks:
    It also flags a set table left behind in the 8x8 ROM.
 4. **Was GaemiChe extracted correctly?** That the two stored sets really are identical
    (i.e. it is a 1/1/1-set font), and that all ink sits within rows 1–8 and columns 0–7.
+5. **Does the 12x12 subset hold up?** That the syllables it contains stay distinct from one
+   another, and that the low 4 bits of each row are clear. A collision stops the build.
 
 ## Z80 notes
 
@@ -441,6 +581,9 @@ Four checks:
 * **Sets hold 20, 22 and 28 jamo** — not powers of two, so the multiply is awkward. The 16x16 ROM
   keeps a table of per-set start addresses and only multiplies the glyph index by 32. The 8x8 ROM
   has no sets, so it is just group start + index x 8.
+* **A 12x12 row is 6 bytes.** 12 pixels is 8 + 4: `ExpandByte` produces four bytes, and the
+  remaining four pixels come from the **high** nibble of the second byte via `ExpandByte.nibble`
+  for two more. The generator clears the low 4 bits and `proof.py` verifies it.
 
 ## Requirements
 

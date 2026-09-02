@@ -3,3 +3,4 @@ build/
 __pycache__/
 src/hantext.asm
 src/hantext8.asm
+src/hantext12.asm

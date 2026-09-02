@@ -17,6 +17,10 @@
   4. 8x8 개미체를 그릇에서 제대로 뽑아냈는가?
      개미체 FNT 는 16x16 그릇에 8x8 을 왼쪽 위로 몰아 그린 2x1x2벌 파일이다.
      정말 1x1x1벌인지(두 벌이 같은지), 글자가 행 1~8 안에만 있는지 확인한다.
+
+  5. 12x12 완성형 부분집합이 성립하는가?
+     담긴 글자들끼리 서로 구별되는지, 한 줄의 아래 4비트가 비어 있는지 본다.
+     (원본 BDF 전체를 재는 것은 tools/fontscan.py 다. 4MB 원본이 있어야 한다.)
 """
 import glob, os, re, sys
 
@@ -50,8 +54,10 @@ BUL_TABLES  = [('FTbJung0', J.FTB[0]), ('FTbJung1', J.FTB[1]),
                ('MTbJong',  J.MTB[0]), ('MTbCho0',  J.MTB[1]), ('MTbCho1', J.MTB[2])]
 
 # 8x8 판은 벌이 하나씩이라 벌 표가 아예 없다. 코드값 표만 16x16 판과 같다.
-ASM_FILES = [('hangul.asm',  CODE_TABLES + BUL_TABLES),
-             ('hangul8.asm', CODE_TABLES)]
+# 12x12 는 완성형이라 조합 자체를 안 한다. 표가 하나도 없어야 한다.
+ASM_FILES = [('hangul.asm',   CODE_TABLES + BUL_TABLES),
+             ('hangul8.asm',  CODE_TABLES),
+             ('hangul12.asm', [])]
 
 def read_asm_tables(path):
     """src/hangul.asm 에서 라벨 뒤에 이어지는 db 줄의 숫자를 긁어 온다."""
@@ -86,11 +92,10 @@ def check_asm_tables(srcdir):
                 print("   asm    %s" % got)
                 print("   python %s" % list(want))
                 bad += 1
-        # 8x8 판에 벌 표가 남아 있으면 지우다 만 것이다
-        if tables is CODE_TABLES:
-            for name, _ in BUL_TABLES:
-                if name in asm:
-                    print("%s 에 쓰이지 않는 벌 표 %s 가 남아 있다" % (fname, name)); bad += 1
+        # 쓰지 않는 표가 남아 있으면 지우다 만 것이다
+        for name, _ in CODE_TABLES + BUL_TABLES:
+            if name in asm and not any(name == n for n, _ in tables):
+                print("%s 에 쓰이지 않는 표 %s 가 남아 있다" % (fname, name)); bad += 1
     print("어셈블리 표    : %s (파일 %d개, 표 %d개, %d칸)"
           % ("통과" if bad == 0 else "실패 %d곳" % bad, len(ASM_FILES), ntab, ncell))
     return bad
@@ -135,12 +140,31 @@ def check_gaemi(assetdir):
               % (os.path.basename(path), len(f8)))
     return bad
 
+def check_subset12(base):
+    """12x12 완성형 부분집합이 쓸 만한 상태인가."""
+    import wanseong
+    try:
+        font, index = wanseong.load_subset(base)     # 크기와 아래 4비트를 여기서 본다
+    except (OSError, ValueError) as e:
+        print("12x12 부분집합  : 실패 - %s" % e)
+        return 1
+    seen, bad = {}, 0
+    for ch, i in index.items():
+        key = font[i*24:(i+1)*24]
+        if key in seen:
+            print("12x12 에서 '%s' 와 '%s' 가 같은 그림이다" % (seen[key], ch)); bad += 1
+        seen[key] = ch
+    print("12x12 부분집합 : %s (글자 %d자, %d바이트, 서로 다 구별됨)"
+          % ("통과" if bad == 0 else "실패 %d곳" % bad, len(index), len(font)))
+    return bad
+
 def main():
     here = os.path.dirname(__file__)
     bad = check_asm_tables(os.path.join(here, '..', 'src'))
     bad += check_roundtrip()
 
     bad += check_gaemi(os.path.join(here, '..', 'assets'))
+    bad += check_subset12(os.path.join(here, '..', 'assets', 'saemmul12'))
 
     codes = [J.johab(chr(u)) for u in range(0xAC00, 0xD7A4)]
     for path in sorted(glob.glob(os.path.join(here, '..', 'assets', '*.fnt'))):

@@ -7,6 +7,7 @@
 #   ./verify.sh         둘 다
 #   ./verify.sh 16      16x16 만
 #   ./verify.sh 8       8x8 만
+#   ./verify.sh 12      12x12 만
 set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/tools.sh"
@@ -16,8 +17,8 @@ WAIT="${WAIT_SECONDS:-8}"
 WHICH="${1:-all}"
 ./build.sh "$WHICH"
 
-verify_one() {                      # $1 = 판(16|8)
-    local tag=""; [ "$1" = 8 ] && tag=8
+verify_one() {                      # $1 = 판(16|8|12)
+    local tag=""; [ "$1" != 16 ] && tag="$1"
     local shot="$ROOT/build/screenshot$tag.png"
     rm -f "$shot"
     cat > "build/verify$tag.tcl" <<TCL
@@ -36,5 +37,6 @@ TCL
 case "$WHICH" in
     16)  verify_one 16 ;;
     8)   verify_one 8 ;;
-    all) verify_one 16; verify_one 8 ;;
+    12)  verify_one 12 ;;
+    all) verify_one 16; verify_one 8; verify_one 12 ;;
 esac

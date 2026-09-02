@@ -32,6 +32,22 @@ The files are the original `개미체7x8.FNT` / `개미체8x8.FNT`, renamed but 
 > exception clause. Shipping a ROM with GaemiChe embedded may carry a source-disclosure obligation.
 > Check with the author first if you intend to distribute commercially.
 
+### `saemmul12.fnt`, `saemmul12.txt`
+
+| | |
+|---|---|
+| 원본 / Origin | 도스 샘물체 `DOSSaemmul-16.bdf` (fonts_220507 묶음) |
+| 만든 이 / Author | Damheo Lee, 2016 |
+| 라이선스 / License | **명시되어 있지 않음 / Not stated** (BDF 에 `COPYRIGHT "Copyright (c) 2016 Damheo Lee"` 만 있음) |
+
+원본 BDF 는 4MB 라 넣지 않았습니다. 이 파일은 화면에 쓰는 **72자만** 16x16 에서 12x12 로 줄여
+뽑아낸 것입니다(1,728바이트). 만드는 방법은 `tools/mkfont12.py` 에 있습니다.
+BDF 안에 라이선스 조항이 적혀 있지 않으므로, 배포하실 것이라면 만드신 분께 확인하시는 편이 안전합니다.
+
+The original BDF is 4 MB and is not included. This file is a **72-syllable** excerpt, shrunk from
+16x16 to 12x12; see `tools/mkfont12.py`. The BDF states a copyright line but no license terms, so
+check with the author before redistributing.
+
 ### `hangul16.fnt`
 
 | | |
