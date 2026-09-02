@@ -8,6 +8,7 @@
 #   ./verify.sh 16      16x16 만
 #   ./verify.sh 8       8x8 만
 #   ./verify.sh 12      12x12 만
+#   ./verify.sh d8      달무리 8x8 만
 set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/tools.sh"
@@ -17,8 +18,9 @@ WAIT="${WAIT_SECONDS:-8}"
 WHICH="${1:-all}"
 ./build.sh "$WHICH"
 
-verify_one() {                      # $1 = 판(16|8|12)
+verify_one() {                      # $1 = 판(16|8|12|d8), $2 = 롬 이름
     local tag=""; [ "$1" != 16 ] && tag="$1"
+    local rom="${2:-hangul$tag}"
     local shot="$ROOT/build/screenshot$tag.png"
     rm -f "$shot"
     cat > "build/verify$tag.tcl" <<TCL
@@ -28,7 +30,7 @@ after time $WAIT {
 }
 TCL
     "$OPENMSX_HEADLESS" -machine "$MSX_MACHINE" \
-        -cart "$ROOT/build/hangul$tag.rom" -script "$ROOT/build/verify$tag.tcl"
+        -cart "$ROOT/build/$rom.rom" -script "$ROOT/build/verify$tag.tcl"
     [ -f "$shot" ] || { echo "화면을 못 찍었다. 에뮬레이터가 일찍 끝났나?" >&2; exit 1; }
     printf '%sx%s  %s\n  ' "$1" "$1" "$shot"
     python3 tools/compare.py "$shot" "$ROOT/build/expected$tag.png"
@@ -38,5 +40,6 @@ case "$WHICH" in
     16)  verify_one 16 ;;
     8)   verify_one 8 ;;
     12)  verify_one 12 ;;
-    all) verify_one 16; verify_one 8; verify_one 12 ;;
+    d8)  verify_one d8 dalmoori8 ;;
+    all) verify_one 16; verify_one 8; verify_one 12; verify_one d8 dalmoori8 ;;
 esac

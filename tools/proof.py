@@ -21,6 +21,11 @@
   5. 12x12 완성형 부분집합이 성립하는가?
      담긴 글자들끼리 서로 구별되는지, 한 줄의 아래 4비트가 비어 있는지 본다.
      (원본 BDF 전체를 재는 것은 tools/fontscan.py 다. 4MB 원본이 있어야 한다.)
+
+  6. 달무리 조합 규칙을 제대로 옮겼는가?
+     tools/dalmoori.py 는 달무리의 타입스크립트 조합 규칙을 파이썬으로 옮긴
+     것이다. 한글 11,172자를 전부 조합해 본다. 규칙을 잘못 옮기면 수백 자가
+     조합에 실패하므로, 실패 0자는 꽤 강한 신호다. 겹쳐서 뭉개진 글자도 센다.
 """
 import glob, os, re, sys
 
@@ -55,9 +60,10 @@ BUL_TABLES  = [('FTbJung0', J.FTB[0]), ('FTbJung1', J.FTB[1]),
 
 # 8x8 판은 벌이 하나씩이라 벌 표가 아예 없다. 코드값 표만 16x16 판과 같다.
 # 12x12 는 완성형이라 조합 자체를 안 한다. 표가 하나도 없어야 한다.
-ASM_FILES = [('hangul.asm',   CODE_TABLES + BUL_TABLES),
-             ('hangul8.asm',  CODE_TABLES),
-             ('hangul12.asm', [])]
+ASM_FILES = [('hangul.asm',    CODE_TABLES + BUL_TABLES),
+             ('hangul8.asm',   CODE_TABLES),
+             ('hangul12.asm',  []),
+             ('dalmoori8.asm', [])]
 
 def read_asm_tables(path):
     """src/hangul.asm 에서 라벨 뒤에 이어지는 db 줄의 숫자를 긁어 온다."""
@@ -158,6 +164,34 @@ def check_subset12(base):
           % ("통과" if bad == 0 else "실패 %d곳" % bad, len(index), len(font)))
     return bad
 
+def check_dalmoori(glyphdir):
+    """달무리 조합 규칙을 옮긴 것이 한글 11,172자를 다 만들어 내는가."""
+    import collections, dalmoori
+    if not os.path.isdir(glyphdir):
+        print("달무리        : 건너뜀 (%s 가 없다)" % glyphdir)
+        return 0
+    font = dalmoori.Font(glyphdir)
+    bmp, fail = {}, []
+    for u in range(0xAC00, 0xD7A4):
+        ch = chr(u)
+        try:
+            bmp[ch] = font.bitmap(ch)
+        except Exception:
+            fail.append(ch)
+    d = collections.defaultdict(list)
+    for ch, b in bmp.items():
+        d[b].append(ch)
+    dup = [v for v in d.values() if len(v) > 1]
+    n = sum(len(v) for v in dup)
+    ok = not fail and not n
+    print("달무리 8x8     : %s (11172자 조합 실패 %d자, 서로 구별 안 되는 글자 %d자)"
+          % ("통과" if ok else "실패", len(fail), n))
+    if fail:
+        print("   조합 못 한 글자: %s" % ''.join(fail[:12]))
+    if dup:
+        print("   뭉친 글자: %s" % ' '.join(''.join(v[:3]) for v in dup[:4]))
+    return 0 if ok else 1
+
 def main():
     here = os.path.dirname(__file__)
     bad = check_asm_tables(os.path.join(here, '..', 'src'))
@@ -165,6 +199,7 @@ def main():
 
     bad += check_gaemi(os.path.join(here, '..', 'assets'))
     bad += check_subset12(os.path.join(here, '..', 'assets', 'saemmul12'))
+    bad += check_dalmoori(os.path.join(here, '..', 'assets', 'dalmoori'))
 
     codes = [J.johab(chr(u)) for u in range(0xAC00, 0xD7A4)]
     for path in sorted(glob.glob(os.path.join(here, '..', 'assets', '*.fnt'))):

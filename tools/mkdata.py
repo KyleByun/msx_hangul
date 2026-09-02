@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """화면에 찍을 것을 어셈블리 자료로 굽고, 같은 것을 그림으로도 그려 둔다.
 
-판이 셋이다.
+판이 넷이다.
 
   --mode 16   16x16 조합형 (벌 8/4/4). 자모를 겹쳐 11,172자를 다 낸다.
   --mode 8    8x8 개미체 조합형 (벌 1/1/1). 제일 작지만 읽기 힘들다.
   --mode 12   12x12 완성형 부분집합. 겹치지 않고 쓰는 글자만 통째로 갖는다.
+  --mode d8   8x8 달무리. 조합 규칙을 빌드할 때 돌려서 글자를 굽는다.
 
 화면 정의가 아래 SCREENS 한 곳에만 있으므로, 롬과 기대 그림이 어긋날 수 없다.
 
@@ -16,7 +17,7 @@
 import argparse, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import johab, wanseong
+import johab, wanseong, dalmoori
 
 SCR_W, SCR_H = 256, 212
 
@@ -64,7 +65,7 @@ SYMBOLS12 = {
 JAMO_PANEL = [('cho', 18), '+', ('jung', 0), '+', ('jong', 4), '=', ' ', "한"]
 
 SCREENS = {
-    16: dict(
+    '16': dict(
         kind='johab', font='assets/hangul16.fnt', adv=16, symbols=SYMBOLS16,
         bands=[(0, 28, BLACK), (144, 52, BLACK)],
         lines=[
@@ -80,7 +81,7 @@ SCREENS = {
             (None, 172, GREEN,  BLACK, JAMO_PANEL),
         ],
     ),
-    8: dict(
+    '8': dict(
         kind='johab', font='assets/gaemi7x8.fnt', adv=8, symbols=SYMBOLS8,
         bands=[(0, 14, BLACK), (88, 62, BLACK), (156, 44, BLACK)],
         lines=[
@@ -103,7 +104,7 @@ SCREENS = {
             (None, 182, GREEN,  BLACK, JAMO_PANEL),
         ],
     ),
-    12: dict(
+    '12': dict(
         kind='wanseong', font='assets/saemmul12', adv=12, symbols=SYMBOLS12,
         bands=[(0, 20, BLACK), (96, 78, BLACK)],
         lines=[
@@ -120,6 +121,30 @@ SCREENS = {
             (   8, 152, WHITE,  BLACK, "조심해서 다녀오게나"),
 
             (None, 184, GREEN,  BLUE,  "여덟 점보다 잘 읽힌다"),
+        ],
+    ),
+    'd8': dict(
+        kind='dalmoori', font='assets/dalmoori', adv=8, symbols={'blank': bytes(8)},
+        bands=[(0, 16, BLACK), (52, 144, BLACK)],
+        lines=[
+            (None,   4, YELLOW, BLACK, "달무리 여덟 점 한글"),
+
+            (   8,  24, CYAN,   BLUE,  "한 글자가 여덟 바이트,"),
+            (   8,  36, CYAN,   BLUE,  "한 줄에 서른두 자가 들어간다."),
+
+            (   8,  58, WHITE,  BLACK, "촌장이 무거운 얼굴로 말했다."),
+
+            (  16,  76, YELLOW, BLACK, "북쪽 동굴에서 마물이 나왔네."),
+            (  16,  88, YELLOW, BLACK, "지난 보름 사이에 세 사람이"),
+            (  16, 100, YELLOW, BLACK, "돌아오지 못했지."),
+
+            (  16, 118, YELLOW, BLACK, "자네가 가 준다면 고맙겠네만,"),
+            (  16, 130, YELLOW, BLACK, "조심하게. 놈은 불을 뿜는다네."),
+
+            (  16, 148, YELLOW, BLACK, "금화 250닢을 주겠네."),
+            (  16, 160, YELLOW, BLACK, "살아서 돌아오게."),
+
+            (   8, 178, GREEN,  BLACK, "이 화면이 쓰는 글자만 담는다."),
         ],
     ),
 }
@@ -144,7 +169,7 @@ def cells(scr, content):
                 elif scr['kind'] == 'johab':
                     out.append(('han', johab.johab(ch)))
                 else:
-                    out.append(('chr', ch))
+                    out.append(('chr', ch))   # 한글이든 문장부호든 글리프 하나
     return out
 
 def placed(scr):
@@ -223,6 +248,8 @@ def emit_png(path, scr, fnt, index, base):
         for i, ((kind, _), v) in enumerate(zip(cs, vals)):
             if scr['kind'] == 'wanseong':
                 rows = wanseong.art(fnt[v*24:(v+1)*24])
+            elif scr['kind'] == 'dalmoori':
+                rows = dalmoori.art(fnt[v*8:(v+1)*8])
             elif kind == 'sym':
                 g = syms[v]
                 rows = johab.art(g) if n == 16 else johab.art8(g)
@@ -240,22 +267,31 @@ def emit_png(path, scr, fnt, index, base):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--mode', type=int, choices=(8, 12, 16), default=16)
+    ap.add_argument('--mode', choices=('16', '12', '8', 'd8'), default='16')
     ap.add_argument('--font', default=None, help="기본은 판마다 정해진 폰트")
     a = ap.parse_args()
 
     scr = SCREENS[a.mode]
     font = a.font or scr['font']
-    tag = {16: '', 8: '8', 12: '12'}[a.mode]
+    tag = {'16': '', '8': '8', '12': '12', 'd8': 'd8'}[a.mode]
     index, base, note = {}, 0, ''
 
     if scr['kind'] == 'johab':
-        if a.mode == 16:
+        if a.mode == '16':
             fnt = open(font, 'rb').read()
             if len(fnt) != johab.FONT_SIZE:
                 sys.exit("폰트가 %d바이트여야 하는데 %d 다: %s" % (johab.FONT_SIZE, len(fnt), font))
         else:
             fnt = johab.build_font8(font)     # 개미체 그릇에서 8x8 만 뽑아 온다
+    elif scr['kind'] == 'dalmoori':
+        # 글리프 원본이 저장소 안에 있으므로 여기서 바로 조합한다.
+        dm = dalmoori.Font(font)
+        chars = sorted(set(used_chars(scr)))
+        fnt = b''.join(dm.glyph(c) for c in chars)
+        index = {c: i for i, c in enumerate(chars)}
+        base = len(chars)
+        fnt += b''.join(scr['symbols'].values())
+        note = "  글자 %d자 + 낱개 그림 %d개" % (base, len(scr['symbols']))
     else:
         # 미리 뽑아 둔 부분집합을 읽는다. 글을 바꿨으면 tools/mkfont12.py 를 돌린다.
         sub, index = wanseong.load_subset(font)
@@ -273,9 +309,9 @@ def main():
     open('build/hanfont%s.bin' % tag, 'wb').write(fnt)
     emit_asm('src/hantext%s.asm' % tag, scr, os.path.basename(font), index, base)
     emit_png('build/expected%s.png' % tag, scr, fnt, index, base)
-    print("%dx%d  %-8s 폰트 %s -> %d바이트, 글줄 %d개 %d칸%s"
-          % (a.mode, a.mode, scr['kind'], font, len(fnt), len(scr['lines']),
-             sum(len(c) for *_, c, _ in placed(scr)), note))
+    print("%-4s %-8s 한 칸 %dx%d, 폰트 %s -> %d바이트, 글줄 %d개 %d칸%s"
+          % (a.mode, scr['kind'], scr['adv'], scr['adv'], font, len(fnt),
+             len(scr['lines']), sum(len(c) for *_, c, _ in placed(scr)), note))
 
 if __name__ == '__main__':
     main()

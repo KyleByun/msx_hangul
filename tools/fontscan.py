@@ -7,14 +7,16 @@
 
 이 잣대로 얻은 결론:
 
-  개미체 8x8 (손으로 그린 것)                        0자 (0.0%)
+  달무리 8x8 (8x8 전용으로 그린 것, 자리마다 변형)      0자 (0.0%)
+  개미체 8x8 (손으로 그린 것, 벌 하나씩)               0자 (0.0%)
   16x16 조합형 폰트를 자모째 12x12 로 줄여 겹치기   2,301자 (20.6%)   <- 못 쓴다
   DOSSaemmul 완성형 16x16 -> 12x12                     94자 (0.8%)   <- 쓴다
   DOSGothic  완성형 16x16 -> 12x12                  2,635자 (23.6%)
   DOSSaemmul 완성형 16x16 -> 14x14                      0자 (0.0%)
 
-그래서 8x8 은 개미체를 그대로 두고(더 나은 것이 없다), 12x12 는 조합형을 줄이는
-대신 샘물체 완성형을 부분집합으로 가져왔다.
+손으로 그 크기에 맞춰 그린 글꼴만 8x8 에서 성립한다. 줄여서 만든 것은 전부 실패한다.
+달무리와 개미체는 둘 다 충돌 0이지만 달무리가 훨씬 또렷하다 - 자모가 자리에 맞춰
+바뀌기 때문이다(개미체는 벌이 하나씩이라 안 바뀐다).
 
 원본 BDF 가 있어야 돌아간다 (4MB 라 저장소에 없다).
     python3 tools/fontscan.py --bdf ~/다운로드/hangul/fonts_220507/bdf/DOSSaemmul-16.bdf
@@ -43,6 +45,10 @@ def scan_johab():
     for name in ('gaemi7x8', 'gaemi8x8'):
         f = J.build_font8('assets/%s.fnt' % name)
         count([J.compose8(f, J.johab(c)) for c in SYL], "%s 8x8 (손으로 그린 것)" % name)
+    if os.path.isdir('assets/dalmoori'):
+        import dalmoori
+        dm = dalmoori.Font('assets/dalmoori')
+        count([dm.bitmap(c) for c in SYL], "달무리 8x8 (빌드할 때 조합)")
 
 def scan_shrunk_johab(n):
     """16x16 조합형 폰트의 자모를 낱개로 줄여서 겹치면 어떻게 되나."""

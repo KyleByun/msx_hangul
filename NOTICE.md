@@ -48,6 +48,31 @@ The original BDF is 4 MB and is not included. This file is a **72-syllable** exc
 16x16 to 12x12; see `tools/mkfont12.py`. The BDF states a copyright line but no license terms, so
 check with the author before redistributing.
 
+### `dalmoori/`
+
+| | |
+|---|---|
+| 이름 / Name | 달무리 글꼴 (dalmoori) |
+| 만든 이 / Author | ranolp 외 / and contributors, 2022 |
+| 라이선스 / License | **Apache License 2.0** (`assets/dalmoori/LICENSE`) |
+| 원본 / Upstream | https://github.com/ranolp/dalmoori-font |
+
+`generator/glyph/` 의 `hangul-phoneme/` 와 `basic-latin/` 을 그대로 옮겼습니다.
+`tools/dalmoori.py` 는 같은 저장소 `generator/src/core/` 의 조합 규칙
+(`ascii-font.ts`, `hangul-phoneme.ts`, `combine.ts`)을 파이썬으로 옮긴 것입니다.
+
+원본 조합기는 글리프 폴더를 정렬 없이 읽어서, 조건을 통과하는 후보가 여럿일 때
+파일시스템 순서가 결과를 가릅니다. 이 저장소는 빌드가 재현되도록 이름 정렬 순서로
+고정했으므로, 결과물이 공식 배포판과 글자별로 다를 수 있습니다.
+
+Copied verbatim from `generator/glyph/`: `hangul-phoneme/` and `basic-latin/`.
+`tools/dalmoori.py` is a Python port of the composition rules in the same repository's
+`generator/src/core/` (`ascii-font.ts`, `hangul-phoneme.ts`, `combine.ts`).
+
+Upstream's combiner reads its glyph directories unsorted, so when several candidates satisfy the
+conditions the filesystem order decides. This repository fixes the order to sorted filenames for
+reproducible builds, so individual glyphs may differ from the official release.
+
 ### `hangul16.fnt`
 
 | | |
