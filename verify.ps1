@@ -2,7 +2,7 @@
 # C-BIOS 가 부팅 로고를 몇 초 보여 준 뒤에야 카트리지 INIT 을 부르므로
 # $Seconds 를 8 아래로 내리면 안 된다.
 param(
-    [ValidateSet("all","16","8")] [string] $Which = "all",
+    [ValidateSet("all","16","12","8")] [string] $Which = "all",
     [double] $Seconds = 8
 )
 $ErrorActionPreference = "Stop"
@@ -13,7 +13,7 @@ $ErrorActionPreference = "Stop"
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
 
 function Verify-One([string] $Mode) {
-    $tag  = if ($Mode -eq "8") { "8" } else { "" }
+    $tag  = if ($Mode -eq "16") { "" } else { $Mode }
     $out  = "$PSScriptRoot\build\screenshot$tag.png"
     $tcl  = "$PSScriptRoot\build\verify$tag.tcl"
 
@@ -44,6 +44,7 @@ after time $Seconds {
 Push-Location $PSScriptRoot
 try {
     if ($Which -eq "all" -or $Which -eq "16") { Verify-One "16" }
+    if ($Which -eq "all" -or $Which -eq "12") { Verify-One "12" }
     if ($Which -eq "all" -or $Which -eq "8" ) { Verify-One "8"  }
 }
 finally { Pop-Location }
